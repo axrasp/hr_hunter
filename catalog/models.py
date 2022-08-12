@@ -14,6 +14,9 @@ class Chat(models.Model):
         default=timezone.now(),
     )
 
+    def __str__(self):
+        return self.chat_id
+
 
 class HR(models.Model):
     tg_id = models.IntegerField(
