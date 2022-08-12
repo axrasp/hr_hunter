@@ -1,3 +1,34 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import HR, Chat
+
+
+@admin.register(HR)
+class AuthorAdmin(admin.ModelAdmin):
+    search_fields = (
+        'tg_id',
+    )
+    readonly_fields = [
+        'created_at',
+        'updated_at'
+    ]
+    list_display = (
+        'tg_id',
+        'updated_at'
+    )
+
+
+@admin.register(Chat)
+class ChatAdmin(admin.ModelAdmin):
+    search_fields = (
+        'tg_id',
+        'chat'
+    )
+    readonly_fields = [
+        'created_at',
+        'updated_at'
+    ]
+    list_display = (
+        'chat_id',
+        'updated_at',
+    )
