@@ -8,6 +8,11 @@ class Chat(models.Model):
         max_length=20,
         null=True
     )
+    title = models.CharField(
+        'title',
+        max_length=20,
+        null=True
+    )
     created_at = models.DateTimeField(
         'Когда парсился чат',
         default=timezone.now,
@@ -19,7 +24,7 @@ class Chat(models.Model):
     )
 
     def __str__(self):
-        return str(self.chat_id)
+        return str(self.title)
 
 
 class HR(models.Model):

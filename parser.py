@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from telethon.sync import TelegramClient
 
 # классы для работы с каналами
-from telethon.tl.functions.channels import GetParticipantsRequest
+from telethon.tl.functions.channels import GetParticipantsRequest, GetFullChannelRequest
 
 # класс для работы с сообщениями
 from telethon.tl.functions.messages import GetHistoryRequest
@@ -21,7 +21,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hr_hunter.settings')
 django.setup()
 
 # импорт моделей
-from catalog.models import HR
+from catalog.models import HR, Chat
 
 # Присваиваем значения внутренним переменным
 load_dotenv()
@@ -35,16 +35,33 @@ client.start()
 
 
 @sync_to_async
-def update_db_hr(participant):
+def update_db_channel(channel):
+    try:
+        channel_request = Chat.objects.get(chat_id=channel.full_chat.id)
+        print(f'Обновляю запись в БД Чатов {channel.chats[1].title}')
+        channel.title = channel.chats[1].title
+    except ObjectDoesNotExist:
+        print('Чат не найден в БД')
+        print(f'Cоздаю запись в БД Чатов {channel.chats[1].title}')
+        channel_request = Chat.objects.create(
+            chat_id=channel.full_chat.id,
+            title=channel.chats[1].title
+        )
+    channel_request.save()
+    return channel_request
+
+
+@sync_to_async
+def update_db_hr(participant, channel_db):
     try:
         hr = HR.objects.get(tg_id=participant.id)
         print(f'Обновляю запись в БД {participant.id}')
-        hr.tg_id = participant.id,
         hr.first_name = participant.first_name,
         hr.last_name = participant.last_name,
         hr.username = participant.username,
         hr.phone = participant.phone,
         hr.is_bot = participant.bot
+        hr.chat.add(channel_db)
     except ObjectDoesNotExist:
         print('Запись не найдена')
         print(f'Cоздаю запись в БД {participant.id}')
@@ -56,6 +73,7 @@ def update_db_hr(participant):
             phone=participant.phone,
             is_bot=participant.bot
         )
+        hr.chat.add(channel_db)
     hr.save()
 
 
@@ -68,6 +86,7 @@ async def get_all_participants(channel):
     filter_user = ChannelParticipantsSearch('')
 
     while True:
+        channel_desc = await client(GetFullChannelRequest(channel)) # полные данные чата
         participants = await client(GetParticipantsRequest(
             channel,
             filter_user,
@@ -81,8 +100,10 @@ async def get_all_participants(channel):
 
     all_users_details = []  # список словарей с интересующими параметрами участников канала
 
+    channel_db = await update_db_channel(channel_desc)
+
     for participant in all_participants:
-        await update_db_hr(participant)  # обновление базы в БД
+        await update_db_hr(participant, channel_db)  # обновление базы в БД
         """Собираем всех участников для JSON-файла"""
         all_users_details.append({"id": participant.id,
                                   "first_name": participant.first_name,

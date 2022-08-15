@@ -14,9 +14,11 @@ class AuthorAdmin(admin.ModelAdmin):
     ]
     list_display = (
         'tg_id',
+        'username',
         'first_name',
         'last_name',
-        'updated_at'
+        'updated_at',
+        'phone'
     )
 
 
@@ -31,6 +33,7 @@ class ChatAdmin(admin.ModelAdmin):
         'updated_at'
     ]
     list_display = (
+        'title',
         'chat_id',
         'updated_at',
     )
