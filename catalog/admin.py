@@ -3,10 +3,16 @@ from django.contrib import admin
 from .models import HR, Chat
 
 
+class HrChatsInline(admin.TabularInline):
+    model = Chat.hrs.through
+    raw_id_fields = ['hr', 'chat']
+
+
 @admin.register(HR)
 class AuthorAdmin(admin.ModelAdmin):
     search_fields = (
         'tg_id',
+        'username',
     )
     readonly_fields = [
         'created_at',
@@ -20,6 +26,7 @@ class AuthorAdmin(admin.ModelAdmin):
         'updated_at',
         'phone'
     )
+    inlines = [HrChatsInline]
 
 
 @admin.register(Chat)
@@ -37,3 +44,5 @@ class ChatAdmin(admin.ModelAdmin):
         'chat_id',
         'updated_at',
     )
+    inlines = [HrChatsInline]
+
