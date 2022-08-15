@@ -14,6 +14,8 @@ class AuthorAdmin(admin.ModelAdmin):
     ]
     list_display = (
         'tg_id',
+        'first_name',
+        'last_name',
         'updated_at'
     )
 

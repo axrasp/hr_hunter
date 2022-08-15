@@ -1,28 +1,27 @@
 import json
 import os
+
+# для корректного переноса времени сообщений в json
+from datetime import datetime
+
 import django
+from asgiref.sync import sync_to_async
+from django.core.exceptions import ObjectDoesNotExist
+from dotenv import load_dotenv
+from telethon.sync import TelegramClient
+
+# классы для работы с каналами
+from telethon.tl.functions.channels import GetParticipantsRequest
+
+# класс для работы с сообщениями
+from telethon.tl.functions.messages import GetHistoryRequest
+from telethon.tl.types import ChannelParticipantsSearch
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hr_hunter.settings')
 django.setup()
 
-from dotenv import load_dotenv
-from telethon.sync import TelegramClient
-from telethon import connection
-from asgiref.sync import sync_to_async
-
-# для корректного переноса времени сообщений в json
-from datetime import date, datetime
-
-# классы для работы с каналами
-from telethon.tl.functions.channels import GetParticipantsRequest
-from telethon.tl.types import ChannelParticipantsSearch
-
-# класс для работы с сообщениями
-from telethon.tl.functions.messages import GetHistoryRequest
-
 # импорт моделей
 from catalog.models import HR
-
 
 # Присваиваем значения внутренним переменным
 load_dotenv()
@@ -35,8 +34,20 @@ client = TelegramClient(username, api_id, api_hash)
 client.start()
 
 
+@sync_to_async
 def update_db_hr(participant):
-    if not HR.objects.get(hr_id=participant.id).exists():
+    try:
+        hr = HR.objects.get(tg_id=participant.id)
+        print(f'Обновляю запись в БД {participant.id}')
+        hr.tg_id = participant.id,
+        hr.first_name = participant.first_name,
+        hr.last_name = participant.last_name,
+        hr.username = participant.username,
+        hr.phone = participant.phone,
+        hr.is_bot = participant.bot
+    except ObjectDoesNotExist:
+        print('Запись не найдена')
+        print(f'Cоздаю запись в БД {participant.id}')
         hr = HR.objects.create(
             tg_id=participant.id,
             first_name=participant.first_name,
@@ -45,7 +56,7 @@ def update_db_hr(participant):
             phone=participant.phone,
             is_bot=participant.bot
         )
-        hr.save()
+    hr.save()
 
 
 async def get_all_participants(channel):
@@ -71,8 +82,8 @@ async def get_all_participants(channel):
     all_users_details = []  # список словарей с интересующими параметрами участников канала
 
     for participant in all_participants:
-        #sync_to_async(update_db_hr(participant))
-
+        await update_db_hr(participant)  # обновление базы в БД
+        """Собираем всех участников для JSON-файла"""
         all_users_details.append({"id": participant.id,
                                   "first_name": participant.first_name,
                                   "last_name": participant.last_name,
@@ -80,7 +91,7 @@ async def get_all_participants(channel):
                                   "phone": participant.phone,
                                   "is_bot": participant.bot})
 
-    with open('channel_users.json', 'w', encoding='utf8') as outfile:
+    with open('channel_users.json', 'w', encoding='utf8') as outfile:  # сохраянем JSON
         json.dump(all_users_details, outfile, ensure_ascii=False)
 
 
@@ -95,6 +106,7 @@ async def dump_all_messages(channel):
 
     class DateTimeEncoder(json.JSONEncoder):
         '''Класс для сериализации записи дат в JSON'''
+
         def default(self, o):
             if isinstance(o, datetime):
                 return o.isoformat()
@@ -120,7 +132,12 @@ async def dump_all_messages(channel):
             break
 
     with open('channel_messages.json', 'w', encoding='utf8') as outfile:
-        json.dump(all_messages, outfile, ensure_ascii=False, cls=DateTimeEncoder)
+        json.dump(
+            all_messages,
+            outfile,
+            ensure_ascii=False,
+            cls=DateTimeEncoder
+        )
 
 
 async def main():

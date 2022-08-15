@@ -3,7 +3,11 @@ from django.utils import timezone
 
 
 class Chat(models.Model):
-    chat_id = models.IntegerField
+    chat_id = models.CharField(
+        'Chat_ID',
+        max_length=20,
+        null=True
+    )
     created_at = models.DateTimeField(
         'Когда парсился чат',
         default=timezone.now,
@@ -15,13 +19,43 @@ class Chat(models.Model):
     )
 
     def __str__(self):
-        return self.chat_id
+        return str(self.chat_id)
 
 
 class HR(models.Model):
-    tg_id = models.IntegerField(
+    tg_id = models.CharField(
         'Tg ID',
-        max_length=200
+        max_length=20,
+        null=True
+    )
+    first_name = models.CharField(
+        'First name',
+        max_length=30,
+        blank=True,
+        null=True
+    )
+    last_name = models.CharField(
+        'Last name',
+        max_length=30,
+        blank=True,
+        null=True
+    )
+    username = models.CharField(
+        'Username',
+        max_length=30,
+        blank=True,
+        null=True
+    )
+    phone = models.CharField(
+        'Phone',
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    is_bot = models.BooleanField(
+        'Bot',
+        blank=True,
+        null = True
     )
     created_at = models.DateTimeField(
         'Когда парсился в первый раз',
@@ -32,7 +66,6 @@ class HR(models.Model):
         'Дата обновления',
         default=timezone.now(),
     )
-
     chat = models.ManyToManyField(
         Chat,
         verbose_name='В каких чатах состоит',
@@ -41,7 +74,4 @@ class HR(models.Model):
     )
 
     def __str__(self):
-        return self.tg_id
-
-
-
+        return f"{str(self.tg_id)} - {self.username}"
