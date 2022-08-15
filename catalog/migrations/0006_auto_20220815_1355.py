@@ -6,7 +6,7 @@ from django.db import migrations
 def update_old_hrs(apps, schema_editor):
     HR = apps.get_model('catalog', 'HR')
     Chat = apps.get_model('catalog', 'Chat')
-    new_chat = Chat.object.get(chat_id=1917265170)
+    new_chat = Chat.objects.get(chat_id=1917265170)
     for hr in HR.objects.all().iterator():
         hr.channel.add(new_chat)
         hr.save
